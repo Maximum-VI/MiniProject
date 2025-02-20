@@ -1,129 +1,73 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
-function Orders() {
+function Order() {
   const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const token = localStorage.getItem("token");
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!token) {
-      navigate("/login");
-      return;
-    }
+    // Retrieve orders from localStorage
+    const savedOrders = JSON.parse(localStorage.getItem("orders")) || [];
+    setOrders(savedOrders);
+  }, []);
 
-    // Decode the token to get the userId (assuming JWT)
-    const userId = JSON.parse(atob(token.split('.')[1])).userId;
+  const handleConfirmOrder = (order) => {
+    let confirmedOrders = JSON.parse(localStorage.getItem("orderTracking")) || [];
+    confirmedOrders.push(order);
+    localStorage.setItem("orderTracking", JSON.stringify(confirmedOrders));
 
-    // Fetch orders for the specific user using the userId
-    axios
-      .get(`http://localhost:5000/api/orders/${userId}`, {  // Include userId in the URL
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => {
-        setOrders(Array.isArray(res.data) ? res.data : []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError("Failed to load orders. Please try again later.");
-        setLoading(false);
-      });
-  }, [token, navigate]);
+    // Remove confirmed order from orders list
+    const updatedOrders = orders.filter((o) => o.orderId !== order.orderId);
+    setOrders(updatedOrders);
+    localStorage.setItem("orders", JSON.stringify(updatedOrders));
 
-  if (loading) {
-    return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </div>
-      </div>
-    );
-  }
+    // Redirect to Order Tracking
+    navigate("/order-tracking");
+  };
 
-  if (error) {
-    return <div className="alert alert-danger text-center">{error}</div>;
+  if (orders.length === 0) {
+    return <div className="alert alert-danger text-center mt-5">No orders found!</div>;
   }
 
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4">🛒 Your Orders</h2>
-      {orders.length > 0 ? (
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover text-center">
-            <thead className="table-dark">
-              <tr>
-                <th>#</th>
-                <th>Order ID</th>
-                <th>Order Date</th>
-                <th>Total Price</th>
-                <th>Status</th>
-                <th>Created At</th>
-                <th>Updated At</th>
-                <th>Order Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((order, index) => (
-                <React.Fragment key={order.OrderID || index}>
-                  <tr>
-                    <td>{index + 1}</td>
-                    <td>{order.OrderID}</td>
-                    <td>{new Date(order.OrderDate).toLocaleDateString()}</td>
-                    <td>{`$${order.TotalPrice.toFixed(2)}`}</td>
-                    <td>{order.Status}</td>
-                    <td>{new Date(order.CreatedAt).toLocaleDateString()}</td>
-                    <td>{new Date(order.UpdatedAt).toLocaleDateString()}</td>
-                    <td>
-                      <button
-                        className="btn btn-info"
-                        data-bs-toggle="collapse"
-                        data-bs-target={`#orderDetails${order.OrderID}`}
-                        aria-expanded="false"
-                        aria-controls={`orderDetails${order.OrderID}`}
-                      >
-                        View Details
-                      </button>
-                    </td>
-                  </tr>
-                  <tr id={`orderDetails${order.OrderID}`} className="collapse">
-                    <td colSpan="8">
-                      <div className="table-responsive">
-                        <table className="table table-bordered table-striped">
-                          <thead className="table-secondary">
-                            <tr>
-                              <th>#</th>
-                              <th>Product ID</th>
-                              <th>Quantity</th>
-                              <th>Subtotal</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {order.OrderDetails.map((detail, idx) => (
-                              <tr key={detail.OrderDetailID || idx}>
-                                <td>{idx + 1}</td>
-                                <td>{detail.ProductID}</td>
-                                <td>{detail.Quantity}</td>
-                                <td>{`$${detail.Subtotal.toFixed(2)}`}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </td>
-                  </tr>
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="text-center text-muted">No orders available</div>
-      )}
+      <h2 className="text-center mb-4">📦 Your Orders</h2>
+
+      <div className="row">
+        {orders.map((order, index) => (
+          <div className="col-md-6 mb-4" key={index}>
+            <div className="card shadow-sm border-primary">
+              <div className="card-header bg-primary text-white">
+                <h5 className="mb-0">Order ID: {order.orderId}</h5>
+              </div>
+              <div className="card-body">
+                <p><strong>Order Date:</strong> {new Date(order.timestamp).toLocaleString()}</p>
+                <p><strong>Total Amount:</strong> ${Number(order.total).toFixed(2)}</p>
+
+                <h6 className="mt-3">🛒 Items:</h6>
+                <ul className="list-group">
+                  {order.cart.map((item, idx) => (
+                    <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
+                      {item.ProductName} x{item.quantity}
+                      <span className="badge bg-secondary">${(Number(item.Price) * item.quantity).toFixed(2)}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Confirm Order Button */}
+                <button
+                  className="btn btn-success mt-3 w-100"
+                  onClick={() => handleConfirmOrder(order)}
+                >
+                  ✅ Confirm Order
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-export default Orders;
+export default Order;

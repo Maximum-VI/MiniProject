@@ -5,9 +5,13 @@ import Products from "./pages/Products";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Orders from "./pages/Orders";
+import Payment from "./pages/payment";
 import { AuthContext } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
 import Footer from "./Footer";
+import Cart from "./pages/Cart";
+import OrderTracking from "./pages/Ordertracking";
+
 
 function App() {
     const { user, logout } = useContext(AuthContext);
@@ -41,8 +45,18 @@ function App() {
                                         </NavLink>
                                     </li>
                                     <li className="nav-item">
+                                        <NavLink className="nav-link" to="/cart">
+                                            Cart
+                                        </NavLink>
+                                    </li>
+                                    <li className="nav-item">
                                         <NavLink className="nav-link" to="/orders">
-                                            Orders
+                                            Order
+                                        </NavLink>
+                                    </li>
+                                    <li className="nav-item">
+                                        <NavLink className="nav-link" to="/ordertracking">
+                                            Ordertracking
                                         </NavLink>
                                     </li>
                                     <li className="nav-item">
@@ -78,6 +92,10 @@ function App() {
                     <Route path="/orders" element={<Orders />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Register />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/payment" element={<Payment />} />
+                    <Route path="/orders" element={<Orders />} />
+                    <Route path="/ordertracking" element={<OrderTracking />} />
                 </Routes>
             </div>
             <Footer />
